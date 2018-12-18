@@ -40,4 +40,3 @@ licenced_PCVs <- draw.quad.venn(area1=ar1, area2=ar2, area3=ar3,area4=ar4,
                       category = c("PCV7","PCV10-unique","PCV13-unique","NVTs"), 
                       lty = "blank", fill = c("skyblue", "pink1", "mediumorchid", "orange"))
 dev.off()
-
