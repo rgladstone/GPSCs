@@ -8,9 +8,12 @@ T1 <- read.csv("T1-GPS_dataset.csv", header = TRUE, sep =",", stringsAsFactors =
 dom_GPSCs <- subset(T1, GPSC.type=="Dominant" & Vaccine_Period=="Pre-PCV", select=c(GPSC,Vaccine_Status))
 
 PCV_status <- as.data.frame(unclass(table(dom_GPSCs$GPSC, dom_GPSCs$Vaccine_Status)))
-PCV_status$`PCV15 (Merck)` <- NULL
-PCV_status$`PCV20 (Pfizer)` <- NULL
-PCV_status <- PCV_status[c(4,2,3,1)]
+#combine NVT and PCV15 and PCV20 VTs as PCV13 NVT
+PCV_status$PCV13NVT <- PCV_status$PCV13NVT <- PCV_status[,1]+PCV_status[,4]+PCV_status[,5]
+#remove unneccessay columns
+PCV_status[c(1,4,5)] <- NULL
+#Reorder columns
+PCV_status <- PCV_status[c(3,1,2,4)]
 
 #venn areas (number of GPSCs with all combinations of PCV status)
 ar1=sum(PCV_status[,1]>0)
