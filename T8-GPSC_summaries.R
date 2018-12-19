@@ -202,6 +202,6 @@ colnames(padjd) <- c("GPSC","Chi ajusted p")
 final_results <- merge(all_results,padjd, by="GPSC",all=TRUE)
 
 #Write file out for T8 of Supplementary tables
-fname <- "T8-GPSC summaries.csv"
+fname <- "T8-GPSC_summaries.csv"
 fname <- gsub(":","-",fname)                 
 fwrite(final_results, file =fname)
