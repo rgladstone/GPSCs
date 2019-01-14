@@ -1,5 +1,3 @@
-#Data for table 2, NVT in NVT-GPSCs or VT-GPSCs 
-
 require(tidyverse)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
@@ -50,7 +48,7 @@ for (country in unique(pop$Country)){
                         Country==country & Period=="Pre-PCV")
     #combine with genome counts per year in NVT-GPSCs/VT-GPSCs
     pop_tab <- merge(one_pop, tab, by.y = "NVTdat", by.x = "Year", all.x=TRUE)
-    pop_tab$Period <- factor(pop_tab$Period, levels = c("Pre-PCV", post))
+    pop_tab$Period <- factor(pop_tab$Period, levels = c("Pre-PCV", "Post-PCV13"))
     pop_tab$Freq[is.na(pop_tab$Freq)] <- 0
     #adjust genome count by case selection
     pop_tab$Actual <- pop_tab$Freq/pop_tab$selection
