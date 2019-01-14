@@ -1,3 +1,5 @@
+#Data for table 2, NVT in NVT-GPSCs or VT-GPSCs 
+
 require(tidyverse)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
