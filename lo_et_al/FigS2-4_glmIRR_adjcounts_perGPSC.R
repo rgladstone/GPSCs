@@ -1,3 +1,5 @@
+#Significant changes measure with IRR via poisson regression within GPSC for South Africa, USA and Israel 
+
 require(tidyverse)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
