@@ -7,10 +7,10 @@ for (x in countries){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
   GPSC_props <- matrix(data=NA,nrow=0,ncol=3)
   colnames(GPSC_props) <- c("GPSC","Proportion VT", "type")
-  coun_p2 <- subset(paper2, Country==x, select=c(GPSC_new,Vaccine_Period,Vaccine_Status,In_Silico_Serotype,Country,Year))
-  GPSCs <- unique(coun_p2$GPSC_new)
+  coun_p2 <- subset(paper2, Country==x, select=c(GPSC,Vaccine_Period,Vaccine_Status,In_Silico_Serotype,Country,Year))
+  GPSCs <- unique(coun_p2$GPSC)
   for (GPSC in GPSCs){
-    GPSC_data <- subset(coun_p2, GPSC_new==GPSC)
+    GPSC_data <- subset(coun_p2, GPSC==GPSC)
     #table of vaccine period by vaccine status, remove rows that sum to sero (non isolates from that period)
     GPSC_tab <- as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status)))[ rowSums(as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status))))!=0, ]
     #Calcuate the proportion VT in the earliest period found in last row of table
@@ -23,7 +23,7 @@ for (x in countries){
   GPSC_type <- list(`NVT-GPSCs`,`VT-GPSCs`)
   names(GPSC_type) <- c("NVT-GPSC","VT-GPSC")
   
-  dat <- subset(paper2, Country==x & Vaccine_Period!="Post-PCV7" & Vaccine_Status_extended=="NVT", select = c(GPSC_new, Vaccine_Period))
+  dat <- subset(paper2, Country==x & Vaccine_Period!="Post-PCV7" & Vaccine_Status_extended=="NVT", select = c(GPSC, Vaccine_Period))
   GPSCs <- as.data.frame.matrix(table(droplevels(dat)))
   colsum <- colSums(GPSCs)
   GPSCs$tot <- GPSCs$`Post-PCV13`+GPSCs$`Pre-PCV`
