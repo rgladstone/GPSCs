@@ -14,15 +14,15 @@ for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
   GPSC_props <- matrix(data=NA,nrow=0,ncol=3)
   colnames(GPSC_props) <- c("GPSC","Proportion VT", "type")
-  coun_p2 <- subset(paper2, Country==country, select=c(GPSC_new,Vaccine_Period,Vaccine_Status,In_Silico_Serotype,Country,Year))
-  GPSCs <- unique(coun_p2$GPSC_new)
-  for (GPSC in GPSCs){
-    GPSC_data <- subset(coun_p2, GPSC_new==GPSC)
+  coun_p2 <- subset(paper2, Country==country, select=c(GPSC,Vaccine_Period,Vaccine_Status,In_Silico_Serotype,Country,Year))
+  GPSCs <- unique(coun_p2$GPSC)
+  for (cluster in GPSCs){
+    GPSC_data <- subset(coun_p2, GPSC==cluster)
     #table of vaccine period by vaccine status, remove rows that sum to sero (non isolates from that period)
     GPSC_tab <- as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status)))[ rowSums(as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status))))!=0, ]
     #Calcuate the proportion VT in the earliest period found in last row of table
     GPSC_prop <- tail(GPSC_tab$PCV/rowSums(GPSC_tab), n=1)
-    GPSC_props <- rbind(GPSC_props, c(GPSC,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
+    GPSC_props <- rbind(GPSC_props, c(cluster,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
   }
   GPSC_props <- as.data.frame(GPSC_props)
   `NVT-GPSCs` <- as.character(subset(GPSC_props, type=="NVT", select=c(GPSC))$GPSC)
@@ -41,17 +41,17 @@ for (country in unique(pop$Country)){
     dat <- subset(paper2, 
                   Country==country & Vaccine_Period==post & Vaccine_Status=="NVT"|
                     Country==country & Vaccine_Period=="Pre-PCV"& Vaccine_Status=="NVT",
-                  select = c(GPSC_new, Year))
-    GPSCs <- unique(dat$GPSC_new)
+                  select = c(GPSC, Year))
+    GPSCs <- unique(dat$GPSC)
     #test IRR for NVT in each GPSC
-    for (GPSC in GPSCs){
+    for (cluster in GPSCs){
       #what type of GPSC is being tested?
-      if (GPSC %in% GPSC_type$`NVT-GPSC`){
+      if (cluster %in% GPSC_type$`NVT-GPSC`){
         what_type <- "NVT-GPSC"
       } else {
         what_type <- "VT-GPSC"
       }
-      GPSC_dat <- droplevels(subset(dat, GPSC_new==GPSC, select = c(Year)))
+      GPSC_dat <- droplevels(subset(dat, GPSC==cluster, select = c(Year)))
       tab <- as.data.frame(table(GPSC_dat))
       #combine with genome counts per year
       pop_tab <- merge(one_pop, tab, by.y = "GPSC_dat", by.x = "Year", all.x=TRUE)
@@ -83,9 +83,9 @@ for (country in unique(pop$Country)){
           confi_up <- pre_postconfint[2,2] 
         }
         if (post == "Post-PCV7"){
-          GPSC_NVTIRR_pre_PCV7 <- rbind(GPSC_NVTIRR_pre_PCV7,c(country, GPSC, what_type, sum(subset(pop_tab, Period=="Pre-PCV")['Actual']), sum(subset(pop_tab, Period==post)['Actual']), IRR, confi_lo, confi_up, ps))
+          GPSC_NVTIRR_pre_PCV7 <- rbind(GPSC_NVTIRR_pre_PCV7,c(country, cluster, what_type, sum(subset(pop_tab, Period=="Pre-PCV")['Actual']), sum(subset(pop_tab, Period==post)['Actual']), IRR, confi_lo, confi_up, ps))
         } else {
-          GPSC_NVTIRR_pre_PCV13 <- rbind(GPSC_NVTIRR_pre_PCV13,c(country, GPSC, what_type, sum(subset(pop_tab, Period=="Pre-PCV")['Actual']), sum(subset(pop_tab, Period==post)['Actual']), IRR, confi_lo, confi_up, ps))
+          GPSC_NVTIRR_pre_PCV13 <- rbind(GPSC_NVTIRR_pre_PCV13,c(country, cluster, what_type, sum(subset(pop_tab, Period=="Pre-PCV")['Actual']), sum(subset(pop_tab, Period==post)['Actual']), IRR, confi_lo, confi_up, ps))
         }
       }
     }
@@ -104,15 +104,15 @@ for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
   GPSC_props <- matrix(data=NA,nrow=0,ncol=3)
   colnames(GPSC_props) <- c("GPSC","Proportion VT", "type")
-  coun_p2 <- subset(paper2, Country==country, select=c(GPSC_new,Vaccine_Period,Vaccine_Status,Year))
-  GPSCs <- unique(coun_p2$GPSC_new)
-  for (GPSC in GPSCs){
-    GPSC_data <- subset(coun_p2, GPSC_new==GPSC)
+  coun_p2 <- subset(paper2, Country==country, select=c(GPSC,Vaccine_Period,Vaccine_Status,Year))
+  GPSCs <- unique(coun_p2$GPSC)
+  for (cluster in GPSCs){
+    GPSC_data <- subset(coun_p2, GPSC==cluster)
     #table of vaccine period by vaccine status, remove rows that sum to sero (non isolates from that period)
     GPSC_tab <- as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status)))[ rowSums(as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status))))!=0, ]
     #Calcuate the proportion VT in the earliest period found in last row of table
     GPSC_prop <- tail(GPSC_tab$PCV/rowSums(GPSC_tab), n=1)
-    GPSC_props <- rbind(GPSC_props, c(GPSC,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
+    GPSC_props <- rbind(GPSC_props, c(cluster,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
   }
   GPSC_props <- as.data.frame(GPSC_props)
   `NVT-GPSCs` <- as.character(subset(GPSC_props, type=="NVT", select=c(GPSC))$GPSC)
@@ -127,17 +127,17 @@ for (country in unique(pop$Country)){
   dat <- subset(paper2, 
                 Country==country & Vaccine_Period==post & Vaccine_Status=="NVT"|
                   Country==country & Vaccine_Period=="Post-PCV7"& Vaccine_Status=="NVT",
-                select = c(GPSC_new, Year))
-  GPSCs <- unique(dat$GPSC_new)
-  for (GPSC in GPSCs){
+                select = c(GPSC, Year))
+  GPSCs <- unique(dat$GPSC)
+  for (cluster in GPSCs){
     #what type of GPSC is being tested?
-    if (GPSC %in% GPSC_type$`NVT-GPSC`){
+    if (cluster %in% GPSC_type$`NVT-GPSC`){
       what_type <- "NVT-GPSC"
     } else {
       what_type <- "VT-GPSC"
     }
     
-    GPSC_dat <- droplevels(subset(dat, GPSC_new==GPSC, select = c(Year)))
+    GPSC_dat <- droplevels(subset(dat, GPSC==cluster, select = c(Year)))
     tab <- as.data.frame(table(GPSC_dat))
     pop_tab <- merge(one_pop, tab, by.y = "GPSC_dat", by.x = "Year", all.x=TRUE)
     pop_tab$Period <- factor(pop_tab$Period, levels = c("Post-PCV7", post))
@@ -163,7 +163,7 @@ for (country in unique(pop$Country)){
         confi_lo <- pre_postconfint[2,1]
         confi_up <- pre_postconfint[2,2] 
       }
-      GPSC_NVTIRR_PCV7_PCV13 <- rbind(GPSC_NVTIRR_PCV7_PCV13,c(country, GPSC, what_type, IRR, confi_lo, confi_up, ps))
+      GPSC_NVTIRR_PCV7_PCV13 <- rbind(GPSC_NVTIRR_PCV7_PCV13,c(country, cluster, what_type, IRR, confi_lo, confi_up, ps))
     }
   }
 }
@@ -184,3 +184,4 @@ pre_v_PCV7_pre_v_PCV13 <- merge(GPSC_NVTIRR_pre_PCV7[,c(1:3,6,10)],GPSC_NVTIRR_p
 pre_v_PCV7_pre_v_PCV13_PCV7_v_PCV13 <- merge(pre_v_PCV7_pre_v_PCV13,GPSC_NVTIRR_PCV7_PCV13[,c(1,2,4,8)], by=c("Country","GPSC"), all=TRUE)
 colnames(pre_v_PCV7_pre_v_PCV13_PCV7_v_PCV13) <- c("Country","GPSC","GPSC_type","IRR-pre_v_PCV7","adj.p","IRR-pre_v_PCV13","adj.p","IRR-PCV7_v_PCV13","adj.p")
 write.csv(pre_v_PCV7_pre_v_PCV13_PCV7_v_PCV13, file ="Tab3_multiperiod_summary_glmIRR_NVT_pseudo_adjfreq.csv", row.names = FALSE)
+
