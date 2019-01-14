@@ -4,13 +4,13 @@ library(stringr)
 #input data T1-GPSC_dataset tab from Supplementary-T1-T21 in csv format
 T1 <- read.csv("T1-GPS_dataset.csv", header = TRUE, sep =",", stringsAsFactors = FALSE)
 
-resist_cols <- subset(T1, select=c(Predicted_CLSI_Pen.SXT.cat.ery.tet, MDR))
-resist_cols$MDR[resist_cols$MDR == "No"] <- "S"
-resist_cols$MDR[resist_cols$MDR == "Yes"] <- "R"
-resist_cols$Any[grepl("R", resist_cols$Predicted_CLSI_Pen.SXT.cat.ery.tet) == TRUE] <- "R"
-resist_cols$Any[!grepl("R", resist_cols$Predicted_CLSI_Pen.SXT.cat.ery.tet) == TRUE & grepl("I", resist_cols$Predicted_CLSI_Pen.SXT.cat.ery.tet) == TRUE ] <- "I"
+resist_cols <- subset(T1, select=c(Corrected_CLSI_Pen.SXT.cat.ery.tet, MDR))
+resist_cols$MDR[resist_cols$MDR == "no"] <- "S"
+resist_cols$MDR[resist_cols$MDR == "yes"] <- "R"
+resist_cols$Any[grepl("R", resist_cols$Corrected_CLSI_Pen.SXT.cat.ery.tet) == TRUE] <- "R"
+resist_cols$Any[!grepl("R", resist_cols$Corrected_CLSI_Pen.SXT.cat.ery.tet) == TRUE & grepl("I", resist_cols$Corrected_CLSI_Pen.SXT.cat.ery.tet) == TRUE ] <- "I"
 resist_cols$Any[is.na(resist_cols$Any)] <- "S"
-resist <- str_split_fixed(resist_cols$Predicted_CLSI_Pen.SXT.cat.ery.tet, "_", 5)
+resist <- str_split_fixed(resist_cols$Corrected_CLSI_Pen.SXT.cat.ery.tet, "_", 5)
 resist <- as.data.frame(cbind(resist,resist_cols$MDR, resist_cols$Any))
 colnames(resist) <- c("Penicillin","Co-trimoxazole", "Chloramphenicol","Erythromycin","Tetracyline", "MDR", "Any")
 results <-matrix(nrow = 0, ncol=2)
