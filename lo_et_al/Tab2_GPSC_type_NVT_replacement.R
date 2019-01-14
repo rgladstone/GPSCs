@@ -12,16 +12,16 @@ for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
   GPSC_props <- matrix(data=NA,nrow=0,ncol=3)
   colnames(GPSC_props) <- c("GPSC","Proportion VT", "type")
-  coun_p2 <- subset(paper2, Country==country, select=c(GPSC_new,Vaccine_Period,Vaccine_Status,Year))
+  coun_p2 <- subset(paper2, Country==country, select=c(GPSC,Vaccine_Period,Vaccine_Status,Year))
   total_NVT <- dim(subset(coun_p2, Vaccine_Period=="Pre-PCV" & Vaccine_Status=="NVT", select=c("Vaccine_Status")))[1]
-  GPSCs <- unique(coun_p2$GPSC_new)
-  for (GPSC in GPSCs){
-    GPSC_data <- subset(coun_p2, GPSC_new==GPSC)
+  GPSCs <- unique(coun_p2$GPSC)
+  for (cluster in GPSCs){
+    GPSC_data <- subset(coun_p2, GPSC==cluster)
     #table of vaccine period by vaccine status, remove rows that sum to sero (non isolates from that period)
     GPSC_tab <- as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status)))[ rowSums(as.data.frame(unclass(table(GPSC_data$Vaccine_Period,GPSC_data$Vaccine_Status))))!=0, ]
     #Calcuate the proportion VT in the earliest period found in last row of table
     GPSC_prop <- tail(GPSC_tab$PCV/rowSums(GPSC_tab), n=1)
-    GPSC_props <- rbind(GPSC_props, c(GPSC,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
+    GPSC_props <- rbind(GPSC_props, c(cluster,GPSC_prop,ifelse(GPSC_prop<0.5,"NVT","VT")))
   }
   GPSC_props <- as.data.frame(GPSC_props)
   `NVT-GPSCs` <- as.character(subset(GPSC_props, type=="NVT", select=c(GPSC))$GPSC)
@@ -40,7 +40,7 @@ for (country in unique(pop$Country)){
     #How many GPSCs?
     No_GPSCs <- length(type)
         #select year of isolation for NVTs collected pre-PCV7 or post-PCV13 in NVT-GPSCs/VT-GPSCs from country of interest
-    NVTdat <- droplevels(subset(paper2, GPSC_new %in% type & Country==country & Vaccine_Period!="Post-PCV7" & Vaccine_Status=="NVT", select = c(Year)))
+    NVTdat <- droplevels(subset(paper2, GPSC %in% type & Country==country & Vaccine_Period!="Post-PCV7" & Vaccine_Status=="NVT", select = c(Year)))
     tab <- as.data.frame(table(NVTdat))
     #case selection and population size per year
     one_pop <- subset(pop, 
