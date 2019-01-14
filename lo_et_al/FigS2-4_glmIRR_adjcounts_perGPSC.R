@@ -1,4 +1,4 @@
-#Significant changes measure with IRR via poisson regression within GPSC for South Africa, USA and Israel 
+#Significant changes measure with IRR via poisson regression within GPSC for South Africa, USA and Israel for figures S2-4
 
 require(tidyverse)
 
