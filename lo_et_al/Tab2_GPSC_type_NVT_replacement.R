@@ -6,14 +6,15 @@ pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
 paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
 
 #Calculate IRR for NVT in NVT-GPSCs or VT-GPSCs between pre-PCV and post-PCV13 periods for each country
-GPSCtype_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=15)
+GPSCtype_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=16)
 
 for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
   GPSC_props <- matrix(data=NA,nrow=0,ncol=3)
   colnames(GPSC_props) <- c("GPSC","Proportion VT", "type")
   coun_p2 <- subset(paper2, Country==country, select=c(GPSC,Vaccine_Period,Vaccine_Status,Year))
-  total_NVT <- dim(subset(coun_p2, Vaccine_Period=="Pre-PCV" & Vaccine_Status=="NVT", select=c("Vaccine_Status")))[1]
+  total_NVTpre <- dim(subset(coun_p2, Vaccine_Period=="Pre-PCV" & Vaccine_Status=="NVT", select=c("Vaccine_Status")))[1]
+  total_NVTpost <- dim(subset(coun_p2, Vaccine_Period=="Post-PCV13" & Vaccine_Status=="NVT", select=c("Vaccine_Status")))[1]
   GPSCs <- unique(coun_p2$GPSC)
   for (cluster in GPSCs){
     GPSC_data <- subset(coun_p2, GPSC==cluster)
@@ -56,7 +57,8 @@ for (country in unique(pop$Country)){
     pre_counts <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(Freq)))
     post_counts <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(Freq)))
     #Proportion of NVTs found in NVT-GPSCs or VT-GPSCs
-    prop_of_NVT <- (pre_counts/(total_NVT))*100
+    prop_of_NVTpre <- (pre_counts/(total_NVTpre))*100
+    prop_of_NVTpost <- (post_counts/(total_NVTpost))*100
     pre_actual <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(Actual)))
     post_actual <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(Actual)))
     #round to estimated counts
@@ -80,8 +82,8 @@ for (country in unique(pop$Country)){
     post_inc <- (pre_post[1]*100000)*pre_post[2]
     #Replacement
     extra_cases <- post_inc-pre_inc
-    GPSCtype_NVTIRR_pre_PCV13 <- rbind(GPSCtype_NVTIRR_pre_PCV13,c(country, what_type, No_GPSCs, prop_of_NVT, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc,extra_cases ))
+    GPSCtype_NVTIRR_pre_PCV13 <- rbind(GPSCtype_NVTIRR_pre_PCV13,c(country, what_type, No_GPSCs, prop_of_NVTpre, prop_of_NVTpost, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc,extra_cases ))
   }
 }
-colnames(GPSCtype_NVTIRR_pre_PCV13) <- c("Country","GPSC-type", "No. GPSCs","Prop of NVTs pre-PCV","IRR","lower","upper","p", "pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","extra cases")
+colnames(GPSCtype_NVTIRR_pre_PCV13) <- c("Country","GPSC-type", "No. GPSCs","Prop of NVTs pre-PCV","Prop of NVTs pre-PCV","IRR","lower","upper","p", "pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","extra cases")
 write.csv(GPSCtype_NVTIRR_pre_PCV13, file ="Tab2_postPCV13_glmIRR_NVT_GPSCtype.csv", row.names = FALSE)
