@@ -37,7 +37,7 @@ for (country in unique(pop$Country)){
       post_actual <- sum(subset(pop_tab, Period==post, select=c(Actual)))
       #round estimated counts
       pop_tab$Actual <- round(pop_tab$Actual)
-      if  (sum(pop_tab$Actual)=>5){
+      if  (sum(pop_tab$Actual)>=5){
         if (sum(subset(pop_tab, Period==post)['Actual'])==0){
           pop_tab$Actual <- pop_tab$Actual+1
         }
