@@ -18,11 +18,11 @@ for (country in unique(pop$Country)){
     #select rows from country for pre-PCV and either post-PCV7 or post-PCV13
     dat <- subset(paper2,
                     Country==country & Vaccine_Period==post |
-                    Country==country & Vaccine_Period=="Pre-PCV", select = c(GPSC_new, Year))
-    GPSCs <- unique(dat$GPSC_new)
+                    Country==country & Vaccine_Period=="Pre-PCV", select = c(GPSC, Year))
+    GPSCs <- unique(dat$GPSC)
     #Calculate IRR pre-PCV vs post-PCV13 for each country
-    for (GPSC in GPSCs){
-      GPSC_dat <- droplevels(subset(dat, GPSC_new==GPSC, select = c(Year)))
+    for (cluster in GPSCs){
+      GPSC_dat <- droplevels(subset(dat, GPSC==cluster, select = c(Year)))
       tab <- as.data.frame(table(GPSC_dat))
       #combine with genome counts per year in NVT-GPSCs/VT-GPSCs
       pop_tab <- merge(one_pop, tab, by.y = "GPSC_dat", by.x = "Year", all.x=TRUE)
@@ -37,7 +37,7 @@ for (country in unique(pop$Country)){
       post_actual <- sum(subset(pop_tab, Period==post, select=c(Actual)))
       #round estimated counts
       pop_tab$Actual <- round(pop_tab$Actual)
-      if  (sum(pop_tab$Actual)>10){
+      if  (sum(pop_tab$Actual)>5){
         if (sum(subset(pop_tab, Period==post)['Actual'])==0){
           pop_tab$Actual <- pop_tab$Actual+1
         }
@@ -61,9 +61,9 @@ for (country in unique(pop$Country)){
         #average incidence post vaccine/100,000 population derived from pre incidence and IRR
         post_inc <- (pre_post[1]*100000)*pre_post[2]
         if (post == "Post-PCV7"){
-          GPSC_IRR_pre_PCV7 <- rbind(GPSC_IRR_pre_PCV7,c(country, GPSC, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc))
+          GPSC_IRR_pre_PCV7 <- rbind(GPSC_IRR_pre_PCV7,c(country, cluster, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc))
           } else {
-          GPSC_IRR_pre_PCV13 <- rbind(GPSC_IRR_pre_PCV13,c(country, GPSC, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc))
+          GPSC_IRR_pre_PCV13 <- rbind(GPSC_IRR_pre_PCV13,c(country, cluster, IRR, confi_lo, confi_up, ps, pre_counts, pre_actual, post_counts, post_actual,pre_inc, post_inc))
         }
       }
     }
@@ -77,5 +77,5 @@ GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:6],GPSC_IRR_pre_PCV13[,13],GPS
 
 colnames(GPSC_IRR_pre_PCV7) <- c("Country","GPSC", "IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
 colnames(GPSC_IRR_pre_PCV13) <- c("Country","GPSC","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
-write.csv(GPSC_IRR_pre_PCV7, file ="FigS7postPCV7_glmIRR_pseudo_adjfreq.csv", row.names = FALSE)
-write.csv(GPSC_IRR_pre_PCV13 , file ="postPCV13_glmIRR_pseudo_adjfreq.csv", row.names = FALSE)
+write.csv(GPSC_IRR_pre_PCV7, file ="FigS2-4_postPCV7_glmIRR_pseudo_adjfreq.csv", row.names = FALSE)
+write.csv(GPSC_IRR_pre_PCV13 , file ="FigS2-4_postPCV13_glmIRR_pseudo_adjfreq.csv", row.names = FALSE)
