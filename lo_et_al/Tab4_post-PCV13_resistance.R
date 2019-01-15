@@ -1,5 +1,5 @@
 #input isolate data from Supplementary data
-paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
+paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 #Pen
 dat <- droplevels(subset(paper2, Vaccine_Period!="Post-PCV7"))

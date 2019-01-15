@@ -14,7 +14,7 @@ post_popIL <- sum(popIL$population)/nrow(popIL)
 post_selectionUS <- sum(popUS$selection)/nrow(popUS)
 post_popUS <- sum(popUS)/nrow(popUS)
 #input isolate data from Supplementary data
-paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
+paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 NVT_counts <- droplevels(subset(paper2, Vaccine_Status=="NVT" & Vaccine_Period=="Post-PCV13" & Country %in% c("South Africa", "Israel", "USA"), select = c(GPSC_new, Country)))
 NVT_tab <- as.data.frame(unclass(table(NVT_counts$GPSC_new,NVT_counts$Country)))

@@ -3,7 +3,7 @@ require(tidyverse)
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
 #input isolate data from Supplementary data
-paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
+paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 #Calculate IRR for NVT in NVT-GPSCs or VT-GPSCs between pre-PCV and post-PCV13 periods for each country
 GPSCtype_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=16)

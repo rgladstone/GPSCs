@@ -1,4 +1,4 @@
-paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
+paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 countries <- c("Malawi", "The Gambia", "China")
 

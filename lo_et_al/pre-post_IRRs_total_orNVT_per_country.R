@@ -3,7 +3,7 @@ require(tidyverse)
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
 #input isolate data from Supplementary data
-paper2 <- read.csv("Paper2-supplementary_v4.csv", header = TRUE, sep =",")
+paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 countries <- c("South Africa","USA","Israel")
 
