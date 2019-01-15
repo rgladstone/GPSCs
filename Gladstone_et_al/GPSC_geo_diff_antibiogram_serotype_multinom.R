@@ -1,3 +1,6 @@
+library(afex)
+library("nnet")
+library("car")
 #input data T1-GPSC_dataset tab from Supplementary-T1-T21 in csv format
 T1 <- read.csv("T1-GPS_dataset.csv", header = TRUE, sep =",")
 
@@ -28,13 +31,13 @@ set_sum_contrasts()
 #likelihood ratio test
 anova_lrt <- Anova(anti_mnom,type="III")
 #better than null?
-p <- anova_lrt$`Pr(>Chi)`[2]
+p <- anova_lrt$`Pr(>Chisq)`
 
 #GPSC as predictor for serotype
 sero_dom <- subset(T1, GPSC.type=="Dominant" & Vaccine_Period=="Pre-PCV", select=c(In_Silico_Serotype))
 
 #top serotypes with >15 in pre-PCV dom-GPSCs, sample retention n=/4122
-top_sero <- rownames(subset(as.data.frame(unclass(table(pre_dom$In_Silico_Serotype))),  as.data.frame(unclass(table(pre_dom$In_Silico_Serotype)))[,1] >=15))
+top_sero <- rownames(subset(as.data.frame(unclass(table(sero_dom$In_Silico_Serotype))),  as.data.frame(unclass(table(sero_dom$In_Silico_Serotype)))[,1] >=15))
 #Filter down to dominant GPSCs
 dom_GPSCs <- subset(T1, GPSC.type=="Dominant" & Vaccine_Period=="Pre-PCV" & In_Silico_Serotype %in% top_sero, select=c(GPSC,Country,Antibiogram,In_Silico_Serotype))
 
@@ -77,22 +80,26 @@ for (lineage in GPSCs){
     GPSC_subset$Antibiogram <- relevel(GPSC_subset$Antibiogram, ref=1)
   } else {
     GPSC_subset$Antibiogram <- relevel(GPSC_subset$Antibiogram, ref=levels(GPSC_subset$Antibiogram)[1]) }                                   
-  
-  #country as a predictor of antibiogram in multinomial
-  anti_country_mnom <- multinom(Antibiogram ~ Country, data=GPSC_subset, maxit=1000)
-  #converged?
-  convanti <- anti_country_mnom$convergence == 0
-  #predict
-  country_cm <- table(predict(anti_country_mnom),GPSC_subset$Antibiogram)
-  #Misclass error
-  country_m_err <- 1-sum(diag(country_cm))/sum(country_cm)
-  # use sum coding, necessary to make type III LR tests valid
-  set_sum_contrasts()
-  #likelihood ratio test
-  country_anova_lrt <- Anova(anti_country_mnom,type="III")
-  #better than null?
-  loop_p <- country_anova_lrt$`Pr(>Chisq)`
-  
+  if (length(levels(GPSC_subset$Antibiogram)) >1){
+    #country as a predictor of antibiogram in multinomial
+    anti_country_mnom <- multinom(Antibiogram ~ Country, data=GPSC_subset, maxit=1000)
+    #converged?
+    convanti <- anti_country_mnom$convergence == 0
+    #predict
+    country_cm <- table(predict(anti_country_mnom),GPSC_subset$Antibiogram)
+    #Misclass error
+    country_m_err <- 1-sum(diag(country_cm))/sum(country_cm)
+    # use sum coding, necessary to make type III LR tests valid
+    set_sum_contrasts()
+    #likelihood ratio test
+    country_anova_lrt <- Anova(anti_country_mnom,type="III")
+    #better than null?
+    loop_p <- country_anova_lrt$`Pr(>Chisq)`
+  } else {
+    convanti <- "NA"
+    loop_p <- "NA"
+    convsero <- "NA"
+  }
   #Country as a predictor of serotype in multinomial
   if (length(levels(GPSC_subset$In_Silico_Serotype)) >1){
     sero_country_mnom <- multinom(In_Silico_Serotype ~ Country, data=GPSC_subset, maxit=1000)
@@ -118,7 +125,7 @@ for (lineage in GPSCs){
   result <- rbind(result,c(lineage, as.character(convanti), country_m_err, loop_p, as.character(convsero), sero_m_err, loop_sero_p))
 }
 
-#Adjust for multiple testing
+#Adjust for multiple testing, will give warnings for NA values where no testing occured, excludes these by default
 result <- cbind(result, p.adjust(as.numeric(result[,4]), method = "BH"),p.adjust(as.numeric(result[,7]), method = "BH"))
 colnames(result) <- c("GPSC", "countryanti_convergance", "countryanti_misclass", "countryanti_multinom_p", "countrysero_convergance","countrysero_misclass", "countrysero_multinom_p", "countryanti_multinom_adjp", "countrysero_multinom_adjp")
 #Count dominant-GPSCs where country was sig pred of antibiogram or serotype and report their mean and stdev of _misclass

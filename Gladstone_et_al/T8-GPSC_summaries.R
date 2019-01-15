@@ -1,8 +1,8 @@
 #input data T1-GPSC_dataset tab from Supplementary-T1-T21 in csv format
 SID_data <- read.csv("T1-GPS_dataset.csv", header = TRUE, sep =",", stringsAsFactors = FALSE)
-#library("vegan")
-#library("data.table")
-#library("dplyr")
+library("vegan")
+library("data.table")
+library("dplyr")
 
 ##Count summaries of GPSC##
 
@@ -167,13 +167,14 @@ for (GPSCloop in sort(unique(SID_data$GPSC))){
   #most common ST
   st_count <- max(st_counts)
   st_max <- names(st_counts)[which(st_counts==max(st_counts))]
-
+  #mean number of antibiotic classes to which isolates are resistance
+  mean_classes <- mean(unique(subset(SID_data,GPSC==GPSCloop, select =c(No_of_classes)))[,1])
   
   #Create output row of summary data for GPSC
   serostD1 <- c(GPSCloop,
                 length(seros),seroD1_pre, sero_max, sero_count, sero_perc, paste(as.character(sero_ranked[,1]),collapse=","),PCV7_perc, PCV7_preperc, PCV10_perc, PCV10_preperc,PCV13_perc, PCV13_preperc, PCV15_perc, PCV15_preperc, PCV20_perc, PCV20_preperc, NVT_perc, NVT_preperc, 
                 length(sts), st_max[1], st_count,
-                continent_count,continentD1,country_count,countryD1,country_max,P_country)
+                continent_count,continentD1,country_count,countryD1,country_max,P_country,mean_classes)
   if (b == 0) {
     results <- serostD1
     b <- 1
@@ -192,7 +193,7 @@ all_results <- merge(GPSC_counts, type, by="GPSC")
 #Merge count results with GPSC loop results
 all_results <- merge(all_results,results, by="GPSC")
 colnames(all_results) <- c("GPSC","Count","Disease Count", "Pre-PCV Count", "Pre-PCV Disease Count", "GPSC type", "Number of Serotypes", "Sero SDI 1-D pre-PCV","Max Serotype", "Max Serotype Count", "% of total serotype X", "Serotype list", "% PCV7", "% PCV7-pre","% PCV10","% PCV10-pre", "% PCV13", "% PCV13-pre","% PCV15","% PCV15-pre","% PCV20","% PCV20-pre", "% PCV13 NVT","% PCV13 NVT-pre", 
-                           "Number of STs", "Max ST", "Max ST count","Continent count", "Continent 1-D", "Country count", "Country 1-D", "Country Max", "Chi p max country")
+                           "Number of STs", "Max ST", "Max ST count","Continent count", "Continent 1-D", "Country count", "Country 1-D", "Country Max", "Chi p max country","Mean_No_resistant_classes")
 #Adjust for multiple testing
 padj <- subset(all_results, `GPSC type`=="Dominant", c(GPSC, `Chi p max country`)) 
 padjd <- p.adjust(as.numeric(as.character(padj$`Chi p max country`)), n= length(padj$`Chi p max country`))
@@ -201,8 +202,10 @@ padjd$`Chi p max country` <- NULL
 colnames(padjd) <- c("GPSC","Chi ajusted p")
 #Merge adjustd p-values with all results
 final_results <- merge(all_results,padjd, by="GPSC",all=TRUE)
+#swap final columns
+final_results <- final_results[,c(1:33,35,34)]
 
 #Write file out for T8 of Supplementary tables
-fname <- "T8-GPSC summaries.csv"
+fname <- "T8-GPSC_summaries.csv"
 fname <- gsub(":","-",fname)                 
 fwrite(final_results, file =fname)
