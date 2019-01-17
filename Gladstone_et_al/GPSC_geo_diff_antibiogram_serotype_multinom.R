@@ -140,4 +140,12 @@ results <- cbind(length(which(as.numeric(result[,8]) < 0.05)),
 colnames(results) <- c("N/35 dom-GPSCs country sigpred for antibiogram", "mean misclass country sigpred for antibiogram", "stdev misclass country sigpred for antibiogram",
                        "N/35 dom-GPSCs country sigpred for serotype","mean misclass country sigpred for serotype", "stdev misclass country sigpred for serotype")
 #print final result
-results
+print("GPSC for antibiogram misclassification error")
+print(m_err)
+print(p)
+
+print("GPSC for serotype misclassification error")
+print(m_err_sero)
+print(p_sero)
+
+print(results)

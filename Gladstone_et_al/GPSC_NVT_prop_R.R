@@ -18,6 +18,7 @@ for (x in dominant_GPSC[,1]){
   }
 }
 colnames(Results) <- c("GPSC","NVT R", "NVT S", "NVT %R", "VT R", "VT S", "VT %R", "p-value")
+# Will give warning, NAs introduced by coercion, as padjust ignores NAs in p-value vector by defult
 Results <- cbind(Results, p.adjust(Results[,8], method = "BH"))
 colnames(Results)[9] <- "adjusted p-value"
 write.csv(Results, file ="T14-NVT_penicillin_resistance.csv", row.names = FALSE)

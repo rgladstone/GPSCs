@@ -168,7 +168,7 @@ for (GPSCloop in sort(unique(SID_data$GPSC))){
   st_count <- max(st_counts)
   st_max <- names(st_counts)[which(st_counts==max(st_counts))]
   #mean number of antibiotic classes to which isolates are resistance
-  mean_classes <- mean(unique(subset(SID_data,GPSC==GPSCloop, select =c(No_of_classes)))[,1])
+  mean_classes <- mean(subset(SID_data,GPSC==GPSCloop, select =c(No_of_classes))[,1])
   
   #Create output row of summary data for GPSC
   serostD1 <- c(GPSCloop,
