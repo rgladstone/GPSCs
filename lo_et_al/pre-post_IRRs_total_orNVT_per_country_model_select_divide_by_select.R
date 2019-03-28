@@ -51,10 +51,10 @@ for (x in countries){
                    "Pr(>|z|)" = 2 * pnorm(abs(coef(res)/std.err), lower.tail=FALSE),
                    LL = coef(res) - 1.96 * std.err,
                    UL = coef(res) + 1.96 * std.err)
-    ps <-  r.est[2,3]
+    ps <- r.est[2,3]
     #calculate convert confidence intervals from log values
     confi_lo <- r.est[2,4] %>% exp
-    confi_up <- [2,5] %>% exp
+    confi_up <- r.est[2,5] %>% exp
     model <- "poisson robust SE"
   } else {
     #fit negative bionomial
