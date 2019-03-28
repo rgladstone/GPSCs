@@ -94,13 +94,13 @@ for (country in unique(pop$Country)){
       converged <- res$converged
       pre_post <- res$coefficients %>% exp #gives average incidence before vaccine (intercept) & IRR (Post)
       IRR <- unname(pre_post[2])
-      ps <-  unname(coef(summary(res))[,4][2])
       cov.res <- vcovHC(res, type="HC0")
       std.err <- sqrt(diag(cov.res))
       r.est <- cbind(Estimate= coef(res), "Robust SE" = std.err,
                      "Pr(>|z|)" = 2 * pnorm(abs(coef(res)/std.err), lower.tail=FALSE),
                      LL = coef(res) - 1.96 * std.err,
                      UL = coef(res) + 1.96 * std.err)
+      ps <- r.est[2,3]
       #calculate convert confidence intervals from log values
       confi_lo <- r.est[2,4] %>% exp
       confi_up <- r.est[2,5] %>% exp
