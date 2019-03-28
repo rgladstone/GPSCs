@@ -71,15 +71,9 @@ for (country in unique(pop$Country)){
       post_zeros <- sum(subset(pop_tab, Period==post)$estimated.cases == 0)
       #Only test GPSCs with at least 5  NVT genomes
       if  (sum(pop_tab$Freq)>=5){
-        #Add 1 to case estimate of first year of pre or last year of post if no genomes observed in respective preiods
-        if (sum(subset(pop_tab, Period=="Pre-PCV")['Freq'])==0){
-          pop_tab$estimated.cases[1] <- 1
-          add <- 1
-        } else {
-          add <- 0
-        }
-        if (sum(subset(pop_tab, Period==post)['Freq'])==0){
-          pop_tab$estimated.cases[length(pop_tab$estimated.cases)] <- 1
+        #Add 1 to all case estimate if no genomes observed in one or other period
+        if (sum(subset(pop_tab, Period=="Pre-PCV")['Freq'])==0 | sum(subset(pop_tab, Period==post)['Freq'])==0){
+          pop_tab$estimated.cases <- pop_tab$estimated.cases+1
           add <- 1
         } else {
           add <- 0
@@ -90,9 +84,16 @@ for (country in unique(pop$Country)){
         #test fit
         GoFit <- 1 - pchisq(summary(res)$deviance, 
                             summary(res)$df.residual)
-        #set zero inflation values to NA
+        #set zero inflation to NA as models with no zeros will not be tested for zero inflation
         ZI <- NA
         ZI_period <- NA
+        
+        #assess zero inflation total and period if any zeros observed
+        if (sum(subset(pop_tab)$estimated.cases ==0)>0){
+          res.zip = zeroinfl(estimated.cases ~ Period|Period, data = pop_tab)
+          ZI <- summary(res.zip)$coefficients$zero[1,4]
+          ZI_period <- summary(res.zip)$coefficients$zero[2,4]
+        }
         
         #If poisson does fit
         if (GoFit >0.05){
@@ -116,13 +117,13 @@ for (country in unique(pop$Country)){
           converged <- res$converged
           pre_post <- res$coefficients %>% exp #gives average incidence before vaccine (intercept) & IRR (Post)
           IRR <- unname(pre_post[2])
-          ps <-  unname(coef(summary(res))[,4][2])
           cov.res <- vcovHC(res, type="HC0")
           std.err <- sqrt(diag(cov.res))
           r.est <- cbind(Estimate= coef(res), "Robust SE" = std.err,
                          "Pr(>|z|)" = 2 * pnorm(abs(coef(res)/std.err), lower.tail=FALSE),
                          LL = coef(res) - 1.96 * std.err,
                          UL = coef(res) + 1.96 * std.err)
+          ps <-  r.est[2,3]
           #convert confidence intervals from log values
           confi_lo <- r.est[2,4] %>% exp
           confi_up <- r.est[2,5] %>% exp
@@ -130,12 +131,6 @@ for (country in unique(pop$Country)){
           pre_inc <- pre_post[1]*100000
           #average incidence post vaccine/100,000 population derived from pre incidence and IRR
           post_inc <- (pre_post[1]*100000)*pre_post[2]
-          #assess zero inflation total and period
-          if (sum(subset(pop_tab, Period=="Pre-PCV")$estimated.cases ==0)>0){
-          res.zip = zeroinfl(estimated.cases ~ Period|Period, data = pop_tab)
-          ZI <- summary(res.zip)$coefficients$zero[1,4]
-          ZI_period <- summary(res.zip)$coefficients$zero[2,4]
-          }
           
           #If poisson does NOT fit
         } else {
@@ -157,7 +152,7 @@ for (country in unique(pop$Country)){
           #average incidence post vaccine/100,000 population derived from pre incidence and IRR
           post_inc <- (pre_post[1]*100000)*pre_post[2]
           #assess zero inflation total and period
-          if (sum(subset(pop_tab)$estimated.cases ==0)>0){
+          if (sum(pop_tab$estimated.cases ==0)>0) {
             res.zip = zeroinfl(estimated.cases ~ Period|Period, data = pop_tab)
             ZI <- summary(res.zip)$coefficients$zero[1,4]
             ZI_period <- summary(res.zip)$coefficients$zero[2,4]
@@ -270,15 +265,9 @@ for (country in unique(pop$Country)){
     post13_zeros <- sum(subset(pop_tab, Period=="Post-PCV13") == 0) 
     #Only test GPSCs with at least 5 NVT genomes
     if  (sum(pop_tab$Freq)>=5){
-      #Add one to first year of post-PCV7 or last year of post-PCV13 if no genomes observed in respective preiods
-      if (sum(subset(pop_tab, Period=="Post-PCV7")['Freq'])==0){
-        pop_tab$estimated.cases[1] <- 1
-        add <- 1
-      } else {
-        add <- 0
-      }
-      if (sum(subset(pop_tab, Period=="Post-PCV13")['Freq'])==0){
-        pop_tab$estimated.cases[length(pop_tab$estimated.cases)] <- 1
+      #Add 1 to all case estimate if no genomes observed in one or other period
+      if (sum(subset(pop_tab, Period=="Post-PCV7")['Freq'])==0 | sum(subset(pop_tab, Period=="Post-PCV13")['Freq'])==0){
+        pop_tab$estimated.cases <- pop_tab$estimated.cases+1
         add <- 1
       } else {
         add <- 0
@@ -289,9 +278,18 @@ for (country in unique(pop$Country)){
       GoFit <- 1 - pchisq(summary(res)$deviance, 
                           summary(res)$df.residual)
       GoFit_p <- 1 - pchisq(summary(res)$deviance, 
-                          summary(res)$df.residual)
+                         summary(res)$df.residual)
+      
+      #set zero inflation to NA as models with no zeros will not be tested for zero inflation
       ZI <- NA
       ZI_period <- NA
+      
+      #assess zero inflation total and period
+      if (sum(pop_tab$estimated.cases ==0)>0){
+        res.zip = zeroinfl(estimated.cases ~ Period|Period, data = pop_tab)
+        ZI <- summary(res.zip)$coefficients$zero[1,4]
+        ZI_period <- summary(res.zip)$coefficients$zero[2,4]
+      }
       
       #If poisson does fit
       if (GoFit >0.05){
@@ -322,6 +320,7 @@ for (country in unique(pop$Country)){
                        "Pr(>|z|)" = 2 * pnorm(abs(coef(res)/std.err), lower.tail=FALSE),
                        LL = coef(res) - 1.96 * std.err,
                        UL = coef(res) + 1.96 * std.err)
+        ps <-  r.est[2,3]
         #convert confidence intervals from log values
         confi_lo <- r.est[2,4] %>% exp
         confi_up <- r.est[2,5] %>% exp
@@ -330,7 +329,7 @@ for (country in unique(pop$Country)){
         #average incidence post vaccine/100,000 population derived from pre incidence and IRR
         post_inc <- (pre_post[1]*100000)*pre_post[2]
         #assess zero inflation total and period
-        if (sum(subset(pop_tab, Period=="Pre-PCV")$estimated.cases ==0)>0){
+        if (sum(subset(pop_tab, Period=="Post-PCV7")$estimated.cases ==0)>0 | sum(subset(pop_tab, Period==post)$estimated.cases ==0)>0){
           res.zip = zeroinfl(estimated.cases ~ Period|Period, data = pop_tab)
           ZI <- summary(res.zip)$coefficients$zero[1,4]
           ZI_period <- summary(res.zip)$coefficients$zero[2,4]
