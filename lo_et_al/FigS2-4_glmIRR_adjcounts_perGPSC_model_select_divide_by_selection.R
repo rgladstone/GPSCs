@@ -190,15 +190,15 @@ for (country in unique(pop$Country)){
     }
   }
 }
-#adjust average IRR p-value
+#adjust model IRR p-value
 GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7,p.adjust(GPSC_IRR_pre_PCV7[,10], method = "BH", n=length(GPSC_IRR_pre_PCV7[,ncol(GPSC_IRR_pre_PCV7)])))
 GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13,p.adjust(GPSC_IRR_pre_PCV13[,10], method = "BH", n=length(GPSC_IRR_pre_PCV13[,ncol(GPSC_IRR_pre_PCV13)])))
-#adjust model IRR p-value
+#adjust average IRR p-value
 GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7,p.adjust(GPSC_IRR_pre_PCV7[,20], method = "BH", n=length(GPSC_IRR_pre_PCV7[,ncol(GPSC_IRR_pre_PCV7)])))
 GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13,p.adjust(GPSC_IRR_pre_PCV13[,20], method = "BH", n=length(GPSC_IRR_pre_PCV13[,ncol(GPSC_IRR_pre_PCV13)])))
 #reorder columns
-GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7[,1:10],GPSC_IRR_pre_PCV7[,22],GPSC_IRR_pre_PCV7[,11:21])
-GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,22],GPSC_IRR_pre_PCV13[,11:21])
+GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7[,1:10],GPSC_IRR_pre_PCV7[,21],GPSC_IRR_pre_PCV7[,11:20],GPSC_IRR_pre_PCV7[,22])
+GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,21],GPSC_IRR_pre_PCV7[,11:20],GPSC_IRR_pre_PCV13[,22])
 
 colnames(GPSC_IRR_pre_PCV7) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")
 colnames(GPSC_IRR_pre_PCV13) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")
