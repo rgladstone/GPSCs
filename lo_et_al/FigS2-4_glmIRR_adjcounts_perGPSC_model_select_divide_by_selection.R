@@ -1,7 +1,5 @@
 require(tidyverse)
 library(MASS)
-library(sandwich)
-library(pscl)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
@@ -10,8 +8,8 @@ paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 period <- c("Post-PCV7","Post-PCV13")
 
 #######Calculate IRR per GPSC for pre- vs PCV7 or PCV13 periods############
-GPSC_IRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=16)
-GPSC_IRR_pre_PCV7 <- matrix(data=NA,nrow=0,ncol=16)
+GPSC_IRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=20)
+GPSC_IRR_pre_PCV7 <- matrix(data=NA,nrow=0,ncol=20)
 for (country in unique(pop$Country)){
   for (post in period){
     #case selection and population size per year for pre-PCV and either post-PCV7 or post-PCV13
@@ -38,6 +36,10 @@ for (country in unique(pop$Country)){
       post_counts <- sum(subset(pop_tab, Period==post, select=c(Freq)))
       pre_cases <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
       post_cases <- sum(subset(pop_tab, Period==post, select=c(estimated.cases)))
+      pre_years <- dim(subset(pop_tab, Period=="Pre-PCV"))[1]
+      post_years <- dim(subset(pop_tab, Period==post))[1]
+      pre_population_avg <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(population)))/pre_years
+      post_population_avg <- sum(subset(pop_tab, Period==post, select=c(population)))/post_years
       #round estimated counts
       pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
       
@@ -49,6 +51,18 @@ for (country in unique(pop$Country)){
         } else {
           add <- 0
         }
+        
+        #calculate IRR using period averages
+        IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+        rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+        IRR_by2 <- round(IRR_by2)
+        res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                        outcome = "as.rows")  
+        IRR_calc <- res$res$IRR.strata.wald$est
+        confi_lo_calc <- res$res$IRR.strata.wald$lower
+        confi_up_calc <- res$res$IRR.strata.wald$upper
+        ps_calc <- res$res$chisq.strata$p.value
+        
         #runglm
         res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
         #test fit
@@ -168,21 +182,25 @@ for (country in unique(pop$Country)){
           }
         }
         if (post == "Post-PCV7"){
-          GPSC_IRR_pre_PCV7 <- rbind(GPSC_IRR_pre_PCV7,c(country, cluster, model, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc))
+          GPSC_IRR_pre_PCV7 <- rbind(GPSC_IRR_pre_PCV7,c(country, cluster, model, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
           } else {
-          GPSC_IRR_pre_PCV13 <- rbind(GPSC_IRR_pre_PCV13,c(country, cluster, model, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc))
+          GPSC_IRR_pre_PCV13 <- rbind(GPSC_IRR_pre_PCV13,c(country, cluster, model, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
         }
       }
     }
   }
 }
+#adjust average IRR p-value
 GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7,p.adjust(GPSC_IRR_pre_PCV7[,10], method = "BH", n=length(GPSC_IRR_pre_PCV7[,ncol(GPSC_IRR_pre_PCV7)])))
 GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13,p.adjust(GPSC_IRR_pre_PCV13[,10], method = "BH", n=length(GPSC_IRR_pre_PCV13[,ncol(GPSC_IRR_pre_PCV13)])))
+#adjust model IRR p-value
+GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7,p.adjust(GPSC_IRR_pre_PCV7[,20], method = "BH", n=length(GPSC_IRR_pre_PCV7[,ncol(GPSC_IRR_pre_PCV7)])))
+GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13,p.adjust(GPSC_IRR_pre_PCV13[,20], method = "BH", n=length(GPSC_IRR_pre_PCV13[,ncol(GPSC_IRR_pre_PCV13)])))
 #reorder columns
-GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7[,1:10],GPSC_IRR_pre_PCV7[,17],GPSC_IRR_pre_PCV7[,11:16])
-GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,17],GPSC_IRR_pre_PCV13[,11:16])
+GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7[,1:10],GPSC_IRR_pre_PCV7[,21],GPSC_IRR_pre_PCV7[,11:20],GPSC_IRR_pre_PCV7[,22])
+GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,21],GPSC_IRR_pre_PCV13[,11:20],GPSC_IRR_pre_PCV7[,22])
 
-colnames(GPSC_IRR_pre_PCV7) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
-colnames(GPSC_IRR_pre_PCV13) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
+colnames(GPSC_IRR_pre_PCV7) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")
+colnames(GPSC_IRR_pre_PCV13) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")
 write.csv(GPSC_IRR_pre_PCV7, file ="FigS2-4_postPCV7_glmIRR_pseudo_adjfreq_model_select_divide_by_selection.csv", row.names = FALSE)
 write.csv(GPSC_IRR_pre_PCV13 , file ="FigS2-4_postPCV13_glmIRR_pseudo_adjfreq_model_select_divide_by_selection.csv", row.names = FALSE)
