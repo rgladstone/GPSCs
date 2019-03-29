@@ -1,5 +1,6 @@
 require(tidyverse)
 library(MASS)
+library(sandwich)
 library(pscl)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
