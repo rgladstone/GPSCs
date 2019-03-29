@@ -1,7 +1,7 @@
 require(tidyverse)
 library(MASS)
-library(sandwich)
 library(pscl)
+library(sandwich)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
@@ -10,7 +10,7 @@ paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 countries <- c("South Africa","USA","Israel")
 
-Total_IRR_PCV13 <- matrix(data=NA,nrow=0,ncol=14)
+Total_IRR_PCV13 <- matrix(data=NA,nrow=0,ncol=18)
 for (x in countries){
   dat <- subset(paper2, Country==x & Vaccine_Period!="Post-PCV7", select = c(Year))
   tab <- as.data.frame(table(dat))
@@ -26,8 +26,24 @@ for (x in countries){
   post_counts <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(Freq)))
   pre_cases <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
   post_cases <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(estimated.cases)))
+  pre_years <- dim(subset(pop_tab, Period=="Pre-PCV"))[1]
+  post_years <- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
+  pre_population_avg <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(population)))/pre_years
+  post_population_avg <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(population)))/post_years
   #round to estimated counts
   pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
+ 
+  #2by2 IRR using period averages
+  IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+  rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+  IRR_by2 <- round(IRR_by2)
+  res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                  outcome = "as.rows")  
+  IRR_calc <- res$res$IRR.strata.wald$est
+  confi_lo_calc <- res$res$IRR.strata.wald$lower
+  confi_up_calc <- res$res$IRR.strata.wald$upper
+  ps_calc <- res$res$chisq.strata$p.value
+  
   #run poisson
   res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
   #test fit
@@ -78,12 +94,12 @@ for (x in countries){
   pre_inc <- pre_post[1]*100000
   #average incidence post vaccine/100,000 population derived from pre incidence and IRR
   post_inc <- (pre_post[1]*100000)*pre_post[2]
-  Total_IRR_PCV13 <- rbind(Total_IRR_PCV13,c(x,model,converge,GoFit,IRR,confi_lo,confi_up,ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc))
+  Total_IRR_PCV13 <- rbind(Total_IRR_PCV13,c(x,model,converge,GoFit,IRR,confi_lo,confi_up,ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
 }
-colnames(Total_IRR_PCV13) <- c("Country","model","Converged","GOF", "IRR","lower","upper","p-value","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
+colnames(Total_IRR_PCV13) <- c("Country","model","Converged","GOF", "IRR","lower","upper","p-value","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value")
 write.csv(Total_IRR_PCV13, file ="Total_postPCV13_glmIRR_model_select_divide_by_select.csv", row.names = FALSE)
 
-Total_IRR_PCV13_NVT <- matrix(data=NA,nrow=0,ncol=14)
+Total_IRR_PCV13_NVT <- matrix(data=NA,nrow=0,ncol=18)
 for (x in countries){
   NVTdat <- subset(paper2, Country==x & Vaccine_Period!="Post-PCV7" & Vaccine_Status=="NVT", select = c(Year))
   tab <- as.data.frame(table(NVTdat))
@@ -99,8 +115,24 @@ for (x in countries){
   post_counts <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(Freq)))
   pre_cases <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
   post_cases <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(estimated.cases)))
+  pre_years <- dim(subset(pop_tab, Period=="Pre-PCV"))[1]
+  post_years <- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
+  pre_population_avg <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(population)))/pre_years
+  post_population_avg <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(population)))/post_years
   #round to estimated counts
   pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
+  
+  #2by2 IRR using period averages
+  IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+  rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+  IRR_by2 <- round(IRR_by2)
+  res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                  outcome = "as.rows")  
+  IRR_calc <- res$res$IRR.strata.wald$est
+  confi_lo_calc <- res$res$IRR.strata.wald$lower
+  confi_up_calc <- res$res$IRR.strata.wald$upper
+  ps_calc <- res$res$chisq.strata$p.value
+  
   #run poisson
   res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
   #test fit
@@ -150,8 +182,8 @@ for (x in countries){
   pre_inc <- pre_post[1]*100000
   #average incidence post vaccine/100,000 population derived from pre incidence and IRR
   post_inc <- (pre_post[1]*100000)*pre_post[2]
-  Total_IRR_PCV13_NVT <- rbind(Total_IRR_PCV13_NVT,c(x,model,converge,GoFit,IRR,confi_lo,confi_up,ps,pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc))
+  Total_IRR_PCV13_NVT <- rbind(Total_IRR_PCV13_NVT,c(x,model,converge,GoFit,IRR,confi_lo,confi_up,ps,pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
 }
-colnames(Total_IRR_PCV13_NVT) <- c("Country","model","Converged", "GOF","IRR","lower","upper","p-value","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence")
+colnames(Total_IRR_PCV13_NVT) <- c("Country","model","Converged", "GOF","IRR","lower","upper","p-value","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value")
 write.csv(Total_IRR_PCV13_NVT, file ="TotalNVT_postPCV13_glmIRR_model_select_divide_by_select.csv", row.names = FALSE)
 
