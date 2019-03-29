@@ -10,7 +10,7 @@ pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
 paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 #Calculate IRR for NVT in NVT-GPSCs or VT-GPSCs between pre-PCV and post-PCV13 periods for each country
-GPSCtype_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=21)
+GPSCtype_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=25)
 
 for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
@@ -71,6 +71,17 @@ for (country in unique(pop$Country)){
     post_population_avg <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(population)))/post_years
     #round estimated counts
     pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
+    
+    #average period IRR
+    dat <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+    rownames(dat) <- c("post_avg_population", "pre_avg_population"); colnames(dat) <- c("post_est_annual_cases", "pre_est_annual_cases")
+    dat <- round(dat)
+    res <- epi.2by2(dat = as.table(dat), method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                    outcome = "as.rows")  
+    IRR_calc <- res$res$IRR.strata.wald$est
+    confi_lo_calc <- res$res$IRR.strata.wald$lower
+    confi_up_calc <- res$res$IRR.strata.wald$upper
+    ps_calc <- res$res$chisq.strata$p.value
     
     #run poisson
     res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
@@ -134,27 +145,14 @@ for (country in unique(pop$Country)){
         ZI_period <- summary(res.zip.period)$coefficients$zero[2,4]
       }
     }
-    if (GoFit<0.04 & model != "poisson robust SE"){
-      model <- "none"
-      dat <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
-      rownames(dat) <- c("post_avg_population", "pre_avg_population"); colnames(dat) <- c("post_est_annual_cases", "pre_est_annual_cases")
-      dat <- round(dat)
-      res <- epi.2by2(dat = as.table(dat), method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
-               outcome = "as.rows")  
-      IRR <- res$res$IRR.strata.wald$est
-      confi_lo <- res$res$IRR.strata.wald$lower
-      confi_up <- res$res$IRR.strata.wald$upper
-      ps <- res$res$chisq.strata$p.value
-      GoFit <- "NA"
-    }
     #average incidence before vaccine (intercept)/100,000 population
     pre_inc <- pre_post[1]*100000
     #average incidence post vaccine/100,000 population derived from pre incidence and IRR
     post_inc <- (pre_post[1]*100000)*pre_post[2]
     #Replacement
     extra_cases <- post_inc-pre_inc
-    GPSCtype_NVTIRR_pre_PCV13 <- rbind(GPSCtype_NVTIRR_pre_PCV13,c(country, what_type, No_GPSCs, prop_of_NVTpre, prop_of_NVTpost, model, converged, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,extra_cases ))
+    GPSCtype_NVTIRR_pre_PCV13 <- rbind(GPSCtype_NVTIRR_pre_PCV13,c(country, what_type, No_GPSCs, prop_of_NVTpre, prop_of_NVTpost, model, converged, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,extra_cases,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
   }
 }
-colnames(GPSCtype_NVTIRR_pre_PCV13) <- c("Country","GPSC-type", "No. GPSCs","Prop of NVTs pre-PCV","Prop of NVTs post-PCV","model","Converged","GOF","Zero inflation (ZI)", "ZI by period","IRR","lower","upper","p-value", "pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","extra cases")
+colnames(GPSCtype_NVTIRR_pre_PCV13) <- c("Country","GPSC-type", "No. GPSCs","Prop of NVTs pre-PCV","Prop of NVTs post-PCV","model","Converged","GOF","Zero inflation (ZI)", "ZI by period","IRR","lower","upper","p-value", "pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","extra cases","IRR_average","lower","upper","p-value")
 write.csv(GPSCtype_NVTIRR_pre_PCV13, file ="Tab2_postPCV13_glmIRR_NVT_GPSCtype_model_select_divide_by_select.csv", row.names = FALSE)
