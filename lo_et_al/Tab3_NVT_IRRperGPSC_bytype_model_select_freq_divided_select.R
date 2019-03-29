@@ -1,6 +1,7 @@
 require(tidyverse)
 library(MASS)
 library(pscl)
+library(sandwich)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
@@ -259,10 +260,10 @@ for (country in unique(pop$Country)){
     pop_tab$estimated.cases <- round(pop_tab$Freq/pop_tab$selection)
     pre_cases <-  sum(subset(pop_tab, Period=="Post-PCV7")['estimated.cases'])
     post_cases <-  sum(subset(pop_tab, Period==post)['estimated.cases'])
-    post7_years <- length(subset(pop_tab, Period=="Post-PCV7"))
-    post13_years <- length(subset(pop_tab, Period=="Post-PCV13"))
-    post7_zeros <- sum(subset(pop_tab, Period=="Post-PCV7") == 0) 
-    post13_zeros <- sum(subset(pop_tab, Period=="Post-PCV13") == 0) 
+    post7_years <- dim(subset(pop_tab, Period=="Post-PCV7"))[1]
+    post13_years <- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
+    post7_zeros <- sum(subset(pop_tab, Period=="Post-PCV7")$estimated.cases == 0) 
+    post13_zeros <- sum(subset(pop_tab, Period=="Post-PCV13")$estimated.cases == 0) 
     #Only test GPSCs with at least 5 NVT genomes
     if  (sum(pop_tab$Freq)>=5){
       #Add 1 to all case estimate if no genomes observed in one or other period
@@ -277,9 +278,7 @@ for (country in unique(pop$Country)){
       #test fit
       GoFit <- 1 - pchisq(summary(res)$deviance, 
                           summary(res)$df.residual)
-      GoFit_p <- 1 - pchisq(summary(res)$deviance, 
-                         summary(res)$df.residual)
-      
+
       #set zero inflation to NA as models with no zeros will not be tested for zero inflation
       ZI <- NA
       ZI_period <- NA
