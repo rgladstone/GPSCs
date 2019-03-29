@@ -9,9 +9,9 @@ pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
 paper2 <- read.csv("Paper2-supplementary.csv", header = TRUE, sep =",")
 
 #######Calculate NVT IRR per GPSC############
-GPSC_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=21)
-GPSC_NVTIRR_pre_PCV7 <- matrix(data=NA,nrow=0,ncol=21)
-GPSC_NVTIRR_PCV7_PCV13 <- matrix(data=NA,nrow=0,ncol=21)
+GPSC_NVTIRR_pre_PCV13 <- matrix(data=NA,nrow=0,ncol=25)
+GPSC_NVTIRR_pre_PCV7 <- matrix(data=NA,nrow=0,ncol=25)
+GPSC_NVTIRR_PCV7_PCV13 <- matrix(data=NA,nrow=0,ncol=25)
 
 for (country in unique(pop$Country)){
   #Determine GPSC type per country based on VT proportion (<50% or >=50%) in first period observed
@@ -70,6 +70,8 @@ for (country in unique(pop$Country)){
       post_years <- dim(subset(pop_tab, Period==post))[1]
       pre_zeros <- sum(subset(pop_tab, Period=="Pre-PCV")$estimated.cases == 0) 
       post_zeros <- sum(subset(pop_tab, Period==post)$estimated.cases == 0)
+      pre_population_avg <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(population)))/pre_years
+      post_population_avg <- sum(subset(pop_tab, Period==post, select=c(population)))/post_years
       #Only test GPSCs with at least 5  NVT genomes
       if  (sum(pop_tab$Freq)>=5){
         #Add 1 to all case estimate if no genomes observed in one or other period
@@ -79,7 +81,16 @@ for (country in unique(pop$Country)){
         } else {
           add <- 0
         }
-        
+        #calculate IRR using period averages
+          IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+          rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+          IRR_by2 <- round(IRR_by2)
+          res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                          outcome = "as.rows")  
+          IRR_calc <- res$res$IRR.strata.wald$est
+          confi_lo_calc <- res$res$IRR.strata.wald$lower
+          confi_up_calc <- res$res$IRR.strata.wald$upper
+          ps_calc <- res$res$chisq.strata$p.value
         #run model selection routine
         res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
         #test fit
@@ -198,9 +209,9 @@ for (country in unique(pop$Country)){
           }
         }
         if (post == "Post-PCV7"){
-          GPSC_NVTIRR_pre_PCV7 <- rbind(GPSC_NVTIRR_pre_PCV7,c(country, cluster, what_type, pre_years, post_years, pre_zeros, post_zeros, pre_cases, post_cases, pre_inc, post_inc, add, model, converged, GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps))
+          GPSC_NVTIRR_pre_PCV7 <- rbind(GPSC_NVTIRR_pre_PCV7,c(country, cluster, what_type, pre_years, post_years, pre_zeros, post_zeros, pre_cases, post_cases, pre_inc, post_inc, add, model, converged, GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
         } else {
-          GPSC_NVTIRR_pre_PCV13 <- rbind(GPSC_NVTIRR_pre_PCV13,c(country, cluster, what_type, pre_years, post_years, pre_zeros, post_zeros,pre_cases, post_cases, pre_inc, post_inc, add,model, converged, GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps))
+          GPSC_NVTIRR_pre_PCV13 <- rbind(GPSC_NVTIRR_pre_PCV13,c(country, cluster, what_type, pre_years, post_years, pre_zeros, post_zeros,pre_cases, post_cases, pre_inc, post_inc, add,model, converged, GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
         }
       }
     }
@@ -264,6 +275,8 @@ for (country in unique(pop$Country)){
     post13_years <- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
     post7_zeros <- sum(subset(pop_tab, Period=="Post-PCV7")$estimated.cases == 0) 
     post13_zeros <- sum(subset(pop_tab, Period=="Post-PCV13")$estimated.cases == 0) 
+    pre_population_avg <- sum(subset(pop_tab, Period=="Post-PCV7", select=c(population)))/pre_years
+    post_population_avg <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(population)))/post_years
     #Only test GPSCs with at least 5 NVT genomes
     if  (sum(pop_tab$Freq)>=5){
       #Add 1 to all case estimate if no genomes observed in one or other period
@@ -273,6 +286,17 @@ for (country in unique(pop$Country)){
       } else {
         add <- 0
       }
+      #calculate IRR using period averages
+      IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+      rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+      IRR_by2 <- round(IRR_by2)
+      res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                      outcome = "as.rows")  
+      IRR_calc <- res$res$IRR.strata.wald$est
+      confi_lo_calc <- res$res$IRR.strata.wald$lower
+      confi_up_calc <- res$res$IRR.strata.wald$upper
+      ps_calc <- res$res$chisq.strata$p.value
+      
       #run model selection routine
       res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
       #test fit
@@ -397,20 +421,28 @@ for (country in unique(pop$Country)){
           }
         }
       }
-    GPSC_NVTIRR_PCV7_PCV13 <- rbind(GPSC_NVTIRR_PCV7_PCV13,c(country, cluster, what_type, post7_years, post13_years, post7_zeros, post13_zeros, pre_cases, post_cases, pre_inc, post_inc,add, model,converged,GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps))
+    GPSC_NVTIRR_PCV7_PCV13 <- rbind(GPSC_NVTIRR_PCV7_PCV13,c(country, cluster, what_type, post7_years, post13_years, post7_zeros, post13_zeros, pre_cases, post_cases, pre_inc, post_inc,add, model,converged,GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
     }
   }
 }  
 
 
+#adjust average IRR p value
+GPSC_NVTIRR_pre_PCV7 <- cbind(GPSC_NVTIRR_pre_PCV7,p.adjust(GPSC_NVTIRR_pre_PCV7[,25], method = "BH", n=length(GPSC_NVTIRR_pre_PCV7[,1])))
+GPSC_NVTIRR_pre_PCV13 <- cbind(GPSC_NVTIRR_pre_PCV13,p.adjust(GPSC_NVTIRR_pre_PCV13[,25], method = "BH", n=length(GPSC_NVTIRR_pre_PCV13[,1])))
+GPSC_NVTIRR_PCV7_PCV13 <- cbind(GPSC_NVTIRR_PCV7_PCV13,p.adjust(GPSC_NVTIRR_PCV7_PCV13[,25], method = "BH", n=length(GPSC_NVTIRR_PCV7_PCV13[,1])))
+#adjust average IRR p value
+GPSC_NVTIRR_pre_PCV7 <- cbind(GPSC_NVTIRR_pre_PCV7,p.adjust(GPSC_NVTIRR_pre_PCV7[,21], method = "BH", n=length(GPSC_NVTIRR_pre_PCV7[,1])))
+GPSC_NVTIRR_pre_PCV13 <- cbind(GPSC_NVTIRR_pre_PCV13,p.adjust(GPSC_NVTIRR_pre_PCV13[,21], method = "BH", n=length(GPSC_NVTIRR_pre_PCV13[,1])))
+GPSC_NVTIRR_PCV7_PCV13 <- cbind(GPSC_NVTIRR_PCV7_PCV13,p.adjust(GPSC_NVTIRR_PCV7_PCV13[,21], method = "BH", n=length(GPSC_NVTIRR_PCV7_PCV13[,1])))
+colnames(GPSC_NVTIRR_pre_PCV7) <- c("Country","GPSC","GPSC_type","pre_years", "post7_years", "pre_zeros", "post7_zeros","Pre-PCV cases", "Post cases", "pre_incidence", "postPCV7_incidence","add","model", "Converged","GOF","ZI","ZI_period","IRR","lower","upper", "p", "IRR_average","lower","upper","p-value","adj.avg.p","adj.p")
+colnames(GPSC_NVTIRR_pre_PCV13) <- c("Country","GPSC","GPSC_type", "pre_years", "post13_years", "pre_zeros", "post13_zeros","Pre-PCV cases","Post cases","pre_incidence","postPCV13_incidence", "add","model", "Converged","GOF","ZI","ZI_period", "IRR","lower","upper", "p","IRR_average","lower","upper","p-value", "adj.avg.p","adj.p")
+colnames(GPSC_NVTIRR_PCV7_PCV13) <- c("Country","GPSC","GPSC_type","post7_years", "post13_years", "post7_zeros", "post13_zeros","Pre-PCV cases", "Post cases","postPCV7_inc", "postPCV13_incidence","add","model", "Converged","GOF", "ZI","ZI_period", "IRR","lower","upper", "p","IRR_average","lower","upper","p-value", "adj.avg.p","adj.p")
+#reorder cols
+GPSC_NVTIRR_pre_PCV7 <- GPSC_NVTIRR_pre_PCV7[,c(1:21,27,22:26)]
+GPSC_NVTIRR_pre_PCV13 <- GPSC_NVTIRR_pre_PCV13[,c(1:21,27,22:26)]
+GPSC_NVTIRR_PCV7_PCV13 <- GPSC_NVTIRR_PCV7_PCV13[,c(1:21,27,22:26)]
 
-
-GPSC_NVTIRR_pre_PCV7 <- cbind(GPSC_NVTIRR_pre_PCV7,p.adjust(GPSC_NVTIRR_pre_PCV7[,ncol(GPSC_NVTIRR_pre_PCV7)], method = "BH", n=length(GPSC_NVTIRR_pre_PCV7[,1])))
-GPSC_NVTIRR_pre_PCV13 <- cbind(GPSC_NVTIRR_pre_PCV13,p.adjust(GPSC_NVTIRR_pre_PCV13[,ncol(GPSC_NVTIRR_pre_PCV13)], method = "BH", n=length(GPSC_NVTIRR_pre_PCV13[,1])))
-GPSC_NVTIRR_PCV7_PCV13 <- cbind(GPSC_NVTIRR_PCV7_PCV13,p.adjust(GPSC_NVTIRR_PCV7_PCV13[,ncol(GPSC_NVTIRR_PCV7_PCV13)], method = "BH", n=length(GPSC_NVTIRR_PCV7_PCV13[,1])))
-colnames(GPSC_NVTIRR_pre_PCV7) <- c("Country","GPSC","GPSC_type","pre_years", "post7_years", "pre_zeros", "post7_zeros","Pre-PCV cases", "Post cases", "pre_incidence", "postPCV7_incidence","add","model", "Converged","GOF","ZI","ZI_period","IRR","lower","upper", "p", "adj.p")
-colnames(GPSC_NVTIRR_pre_PCV13) <- c("Country","GPSC","GPSC_type", "pre_years", "post13_years", "pre_zeros", "post13_zeros","Pre-PCV cases","Post cases","pre_incidence","postPCV13_incidence", "add","model", "Converged","GOF","ZI","ZI_period", "IRR","lower","upper", "p", "adj.p")
-colnames(GPSC_NVTIRR_PCV7_PCV13) <- c("Country","GPSC","GPSC_type","post7_years", "post13_years", "post7_zeros", "post13_zeros","Pre-PCV cases", "Post cases","postPCV7_inc", "postPCV13_incidence","add","model", "Converged","GOF", "ZI","ZI_period", "IRR","lower","upper", "p", "adj.p")
 write.csv(GPSC_NVTIRR_pre_PCV7, file ="postPCV7_glmIRR_NVT_pseudo_adjfreq_model_select_divide_by_selection.csv", row.names = FALSE)
 write.csv(GPSC_NVTIRR_pre_PCV13 , file ="postPCV13_glmIRR_NVT_pseudo_adjfreq_model_select_divide_by_selection.csv", row.names = FALSE)
 write.csv(GPSC_NVTIRR_PCV7_PCV13 , file ="postPCV7_postPCV13_glmIRR_NVT_pseudo_adjfreq_model_select_divide_by_selection.csv", row.names = FALSE)
