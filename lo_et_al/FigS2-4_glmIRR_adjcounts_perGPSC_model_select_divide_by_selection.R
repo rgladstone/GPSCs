@@ -52,8 +52,12 @@ for (country in unique(pop$Country)){
           add <- 0
         }
         
+        #capture cases after 1 added to all if one period=0
+        pre_cases_SN <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
+        post_cases_SN <- sum(subset(pop_tab, Period==post, select=c(estimated.cases)))
+        
         #calculate IRR using period averages
-        IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+        IRR_by2 <- matrix(c(post_cases_SN/post_years,pre_cases_SN/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
         rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
         IRR_by2 <- round(IRR_by2)
         res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
@@ -198,7 +202,7 @@ GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7,p.adjust(GPSC_IRR_pre_PCV7[,20], me
 GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13,p.adjust(GPSC_IRR_pre_PCV13[,20], method = "BH", n=length(GPSC_IRR_pre_PCV13[,ncol(GPSC_IRR_pre_PCV13)])))
 #reorder columns
 GPSC_IRR_pre_PCV7 <- cbind(GPSC_IRR_pre_PCV7[,1:10],GPSC_IRR_pre_PCV7[,21],GPSC_IRR_pre_PCV7[,11:20],GPSC_IRR_pre_PCV7[,22])
-GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,21],GPSC_IRR_pre_PCV7[,11:20],GPSC_IRR_pre_PCV13[,22])
+GPSC_IRR_pre_PCV13 <- cbind(GPSC_IRR_pre_PCV13[,1:10],GPSC_IRR_pre_PCV13[,21],GPSC_IRR_pre_PCV13[,11:20],GPSC_IRR_pre_PCV13[,22])
 
 colnames(GPSC_IRR_pre_PCV7) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")
 colnames(GPSC_IRR_pre_PCV13) <- c("Country","GPSC","model","GOF","ZI", "ZI_period","IRR","lower","upper","p","adj.p","pre-genomes", "pre-estimated cases","post-genomes","post-estimated cases", "pre-avg-incidence","post-avg-incidence","IRR_average","lower","upper","p-value","adj.avg.p")

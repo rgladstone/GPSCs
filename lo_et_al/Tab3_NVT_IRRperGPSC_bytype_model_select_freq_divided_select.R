@@ -81,6 +81,13 @@ for (country in unique(pop$Country)){
         } else {
           add <- 0
         }
+        
+        #capture cases after 1 added to all if one period=0
+        pre_cases_SN <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
+        post_cases_SN <- sum(subset(pop_tab, Period==post, select=c(estimated.cases)))
+        
+        #calculate IRR using period averages
+        IRR_by2 <- matrix(c(post_cases_SN/post_years,pre_cases_SN/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
         #calculate IRR using period averages
           IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
           rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
@@ -271,8 +278,8 @@ for (country in unique(pop$Country)){
     pop_tab$estimated.cases <- round(pop_tab$Freq/pop_tab$selection)
     pre_cases <-  sum(subset(pop_tab, Period=="Post-PCV7")['estimated.cases'])
     post_cases <-  sum(subset(pop_tab, Period==post)['estimated.cases'])
-    post7_years <- dim(subset(pop_tab, Period=="Post-PCV7"))[1]
-    post13_years <- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
+    pre_years <- dim(subset(pop_tab, Period=="Post-PCV7"))[1]
+    post_years <- dim(subset(pop_tab, Period==post))[1]
     post7_zeros <- sum(subset(pop_tab, Period=="Post-PCV7")$estimated.cases == 0) 
     post13_zeros <- sum(subset(pop_tab, Period=="Post-PCV13")$estimated.cases == 0) 
     pre_population_avg <- sum(subset(pop_tab, Period=="Post-PCV7", select=c(population)))/pre_years
@@ -286,8 +293,13 @@ for (country in unique(pop$Country)){
       } else {
         add <- 0
       }
+      
+      #capture cases after 1 added to all if one period=0
+      pre_cases_SN <- sum(subset(pop_tab, Period=="Post-PCV7", select=c(estimated.cases)))
+      post_cases_SN <- sum(subset(pop_tab, Period==post, select=c(estimated.cases)))
+      
       #calculate IRR using period averages
-      IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+      IRR_by2 <- matrix(c(post_cases_SN/post_years,pre_cases_SN/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
       rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
       IRR_by2 <- round(IRR_by2)
       res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
