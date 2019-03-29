@@ -1,5 +1,8 @@
 require(tidyverse)
 library(MASS)
+library(pscl)
+library(sandwich)
+library(epiR)
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
@@ -52,14 +55,14 @@ for (country in unique(pop$Country)){
           add <- 0
         }
         
-        #capture cases after 1 added to all if one period=0
-        pre_cases_SN <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
-        post_cases_SN <- sum(subset(pop_tab, Period==post, select=c(estimated.cases)))
-        
         #calculate IRR using period averages
-        IRR_by2 <- matrix(c(post_cases_SN/post_years,pre_cases_SN/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+        IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
         rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
         IRR_by2 <- round(IRR_by2)
+        #if 0 in one period add 1 to both
+        if (sum(IRR_by2[1,]==0) > 0){
+          IRR_by2[1,] <- IRR_by2[1,]+1
+        }
         res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
                         outcome = "as.rows")  
         IRR_calc <- res$res$IRR.strata.wald$est
@@ -184,6 +187,26 @@ for (country in unique(pop$Country)){
            
             }   
           }
+        }
+        if (GoFit <0.05 & model != "poisson robust SE"){
+          #calculate IRR using period averages
+          IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+          colnames(IRR_by2) <- c("post", "pre"); rownames(IRR_by2) <- c("est_annual_cases", "population")
+          IRR_by2 <- round(IRR_by2)
+          #if 0 in one period add 1 to both
+          if (sum(IRR_by2[1,]==0) > 0){
+            IRR_by2[1,] <- IRR_by2[1,]+1
+          }
+          #calculate IRR using period averages
+          model <- "none"
+          res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                          outcome = "as.rows")  
+          IRR <- res$res$IRR.strata.wald$est
+          confi_lo <- res$res$IRR.strata.wald$lower
+          confi_up <- res$res$IRR.strata.wald$upper
+          ps <- res$res$chisq.strata$p.value
+          GoFit <- NA
+          converged <- NA
         }
         if (post == "Post-PCV7"){
           GPSC_IRR_pre_PCV7 <- rbind(GPSC_IRR_pre_PCV7,c(country, cluster, model, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))

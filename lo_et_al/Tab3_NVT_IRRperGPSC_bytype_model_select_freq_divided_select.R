@@ -216,7 +216,7 @@ for (country in unique(pop$Country)){
             }
           }
         }
-        if (GoFit <0.05 & model != "Poisson robust SE"){
+        if (GoFit <0.05 & model != "poisson robust SE"){
           #calculate IRR using period averages
           IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
           colnames(IRR_by2) <- c("post", "pre"); rownames(IRR_by2) <- c("est_annual_cases", "population")
@@ -234,6 +234,7 @@ for (country in unique(pop$Country)){
           confi_up <- res$res$IRR.strata.wald$upper
           ps <- res$res$chisq.strata$p.value
           GoFit <- NA
+          converged <- NA
         }
         if (post == "Post-PCV7"){
           GPSC_NVTIRR_pre_PCV7 <- rbind(GPSC_NVTIRR_pre_PCV7,c(country, cluster, what_type, pre_years, post_years, pre_zeros, post_zeros, pre_cases, post_cases, pre_inc, post_inc, add, model, converged, GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
@@ -453,7 +454,7 @@ for (country in unique(pop$Country)){
           }
         }
       }
-      if (GoFit <0.05 & model != "Poisson robust SE"){
+      if (GoFit <0.05 & model != "poisson robust SE"){
         #calculate IRR using period averages
         IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
         colnames(IRR_by2) <- c("post", "pre"); rownames(IRR_by2) <- c("est_annual_cases", "population")
@@ -471,6 +472,7 @@ for (country in unique(pop$Country)){
         confi_up <- res$res$IRR.strata.wald$upper
         ps <- res$res$chisq.strata$p.value
         GoFit <- NA
+        converged <- NA
       }
     GPSC_NVTIRR_PCV7_PCV13 <- rbind(GPSC_NVTIRR_PCV7_PCV13,c(country, cluster, what_type, pre_years, post_years, post7_zeros, post13_zeros, pre_cases, post_cases, pre_inc, post_inc,add, model,converged,GoFit, ZI, ZI_period,IRR, confi_lo, confi_up, ps,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
     }

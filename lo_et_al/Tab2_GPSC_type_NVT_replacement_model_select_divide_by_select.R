@@ -72,11 +72,15 @@ for (country in unique(pop$Country)){
     #round estimated counts
     pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
     
-    #average period IRR
-    dat <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
-    rownames(dat) <- c("post_avg_population", "pre_avg_population"); colnames(dat) <- c("post_est_annual_cases", "pre_est_annual_cases")
-    dat <- round(dat)
-    res <- epi.2by2(dat = as.table(dat), method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+    #calculate IRR using period averages
+    IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+    rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
+    IRR_by2 <- round(IRR_by2)
+    #if 0 in one period add 1 to both
+    if (sum(IRR_by2[1,]==0) > 0){
+      IRR_by2[1,] <- IRR_by2[1,]+1
+    }
+    res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
                     outcome = "as.rows")  
     IRR_calc <- res$res$IRR.strata.wald$est
     confi_lo_calc <- res$res$IRR.strata.wald$lower
@@ -151,6 +155,32 @@ for (country in unique(pop$Country)){
     post_inc <- (pre_post[1]*100000)*pre_post[2]
     #Replacement
     extra_cases <- post_inc-pre_inc
+    if (GoFit <0.05 & model != "poisson robust SE"){
+      #calculate IRR using period averages
+      IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+      colnames(IRR_by2) <- c("post", "pre"); rownames(IRR_by2) <- c("est_annual_cases", "population")
+      IRR_by2 <- round(IRR_by2)
+      #if 0 in one period add 1 to both
+      if (sum(IRR_by2[1,]==0) > 0){
+        IRR_by2[1,] <- IRR_by2[1,]+1
+      }
+      #calculate IRR using period averages
+      model <- "none"
+      res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+                      outcome = "as.rows")  
+      IRR <- res$res$IRR.strata.wald$est
+      confi_lo <- res$res$IRR.strata.wald$lower
+      confi_up <- res$res$IRR.strata.wald$upper
+      ps <- res$res$chisq.strata$p.value
+      GoFit <- NA
+      converged <- NA
+      #average incidence before vaccine (intercept)/100,000 population
+      pre_inc <- (IRR_by2[1,2]/IRR_by2[2,2])*100000
+      #average incidence post vaccine/100,000 population derived from pre incidence and IRR
+      post_inc <- (IRR_by2[1,1]/IRR_by2[2,1])*100000
+      #Replacement
+      extra_cases <- post_inc-pre_inc
+    }
     GPSCtype_NVTIRR_pre_PCV13 <- rbind(GPSCtype_NVTIRR_pre_PCV13,c(country, what_type, No_GPSCs, prop_of_NVTpre, prop_of_NVTpost, model, converged, GoFit, ZI, ZI_period, IRR, confi_lo, confi_up, ps, pre_counts, pre_cases, post_counts, post_cases,pre_inc, post_inc,extra_cases,IRR_calc,confi_lo_calc,confi_up_calc,ps_calc))
   }
 }
