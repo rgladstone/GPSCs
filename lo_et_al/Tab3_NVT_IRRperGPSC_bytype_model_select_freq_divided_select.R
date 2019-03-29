@@ -89,7 +89,6 @@ for (country in unique(pop$Country)){
         #calculate IRR using period averages
         IRR_by2 <- matrix(c(post_cases_SN/post_years,pre_cases_SN/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
         #calculate IRR using period averages
-          IRR_by2 <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
           rownames(IRR_by2) <- c("post_avg_population", "pre_avg_population"); colnames(IRR_by2) <- c("post_est_annual_cases", "pre_est_annual_cases")
           IRR_by2 <- round(IRR_by2)
           res <- epi.2by2(IRR_by2, method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
