@@ -1,7 +1,8 @@
 require(tidyverse)
 library(MASS)
-library(sandwich)
 library(pscl)
+library(sandwich)
+library("epiR")
 
 #input population size per year from https://github.com/rgladstone/GPSCs/blob/master/lo_et_al/pop_years.csv
 pop <- read.csv("pop_years.csv", header = TRUE, sep =",")
@@ -63,9 +64,14 @@ for (country in unique(pop$Country)){
     prop_of_NVTpre <- (pre_counts/(total_NVTpre))*100
     prop_of_NVTpost <- (post_counts/(total_NVTpost))*100
     pre_cases <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(estimated.cases)))
-    post_cases <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(estimated.cases)))
+    post_cases <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(estimated.cases)))  
+    pre_years<- dim(subset(pop_tab, Period=="Pre-PCV"))[1]
+    post_years<- dim(subset(pop_tab, Period=="Post-PCV13"))[1]
+    pre_population_avg <- sum(subset(pop_tab, Period=="Pre-PCV", select=c(population)))/pre_years
+    post_population_avg <- sum(subset(pop_tab, Period=="Post-PCV13", select=c(population)))/post_years
     #round estimated counts
     pop_tab$estimated.cases <- round(pop_tab$estimated.cases)
+    
     #run poisson
     res = glm(estimated.cases ~ Period + offset(log(population)) , data=pop_tab, family = "poisson")
     #test fit
@@ -92,6 +98,7 @@ for (country in unique(pop$Country)){
       confi_up <- pre_postconfint[2,2]
     } else if (GoFit >=0.01 & GoFit <=0.05){
       #Calcultate robust standard errors
+      model <- "poisson robust SE"
       converged <- res$converged
       pre_post <- res$coefficients %>% exp #gives average incidence before vaccine (intercept) & IRR (Post)
       IRR <- unname(pre_post[2])
@@ -126,37 +133,19 @@ for (country in unique(pop$Country)){
         ZI <- summary(res.zip.period)$coefficients$zero[1,4]
         ZI_period <- summary(res.zip.period)$coefficients$zero[2,4]
       }
-      if (GoFit <0.05 & !is.na(ZI) & ZI <0.05){
-        #fit zero inflated poisson with and without dispersion
-        res.zip = zeroinfl(estimated.cases ~ Period|1 + offset(log(population)) , data=pop_tab)
-        res.zi.nb = zeroinfl(estimated.cases ~ Period|1 + offset(log(population)) , data=pop_tab, dist="negbin")
-        #test fit using Log(theta)
-        GoFit <- summary(res.zi.nb)$coefficients$count[3,4]
-        #select model based on theta
-        if(summary(res.zi.nb)$coefficients$count[3,4] <0.05){
-          model <- "zero inflated negative binomial"
-          converged <- res.zi.nb$converged
-          #test fit using Log(theta)
-          GoFit <- summary(res.zip)$coefficients$count[3,4]
-          ZI <- summary(res.zi.nb)$coefficients$zero[1,4]
-          pre_post <- res.zi.nb$coefficients %>% exp #gives average incidence before vaccine (intercept) & IRR (Post)
-          IRR <- unname(pre_post[2])
-          ps <-  unname(coef(summary(res.zi.nb))$count[,4][2])
-          pre_postconfint <- try(confint(res.zi.nb) %>% exp)
-          confi_lo <- pre_postconfint[2,1]
-          confi_up <- pre_postconfint[2,2]
-        } else {
-          model <- "zero inflated poisson"
-          converged <- res.zip$converged
-          ZI <- summary(res.zip)$coefficients$zero[1,4]
-          pre_post <- res.zip$coefficients %>% exp #gives average incidence before vaccine (intercept) & IRR (Post)
-          IRR <- unname(pre_post[2])
-          ps <-  unname(coef(summary(res.zip))$count[,4][2])
-          pre_postconfint <- try(confint(res.zip) %>% exp)
-          confi_lo <- pre_postconfint[2,1]
-          confi_up <- pre_postconfint[2,2]
-        }
-      }
+    }
+    if (GoFit<0.04 & model != "poisson robust SE"){
+      model <- "none"
+      dat <- matrix(c(post_cases/post_years,pre_cases/pre_years,post_population_avg,pre_population_avg), nrow = 2, byrow = TRUE)
+      rownames(dat) <- c("post_avg_population", "pre_avg_population"); colnames(dat) <- c("post_est_annual_cases", "pre_est_annual_cases")
+      dat <- round(dat)
+      res <- epi.2by2(dat = as.table(dat), method = "cross.sectional", conf.level = 0.95, units = 100, homogeneity = "breslow.day",
+               outcome = "as.rows")  
+      IRR <- res$res$IRR.strata.wald$est
+      confi_lo <- res$res$IRR.strata.wald$lower
+      confi_up <- res$res$IRR.strata.wald$upper
+      ps <- res$res$chisq.strata$p.value
+      GoFit <- "NA"
     }
     #average incidence before vaccine (intercept)/100,000 population
     pre_inc <- pre_post[1]*100000
